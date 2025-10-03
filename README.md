@@ -45,7 +45,7 @@ Omnisolace 是一个全年龄段AI心理疏导机器人系统，包含前端（V
 ### 1. 克隆项目
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/WINDGAND/Omnisolace.git
 cd Omnisolace
 ```
 
