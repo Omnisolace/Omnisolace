@@ -1,0 +1,96 @@
+{
+  "appid": "/",
+  "name": "Omnisolace - 全年龄段AI心理疏导机器人",
+  "short_name": "Omnisolace",
+  "description": "专业、安全、全年龄段适配的AI心理疏导平台",
+  "version": "1.0.0",
+  "versionName": "1.0.0",
+  "versionCode": "1",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#3b82f6",
+  "background_color": "#ffffff",
+  "lang": "zh-CN",
+  "scope": "/",
+  "categories": ["health", "medical", "lifestyle", "utilities"],
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "16x16 32x32",
+      "type": "image/x-icon"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "开始对话",
+      "short_name": "对话",
+      "description": "快速开始心理疏导对话",
+      "url": "/chat",
+      "icons": [
+        {
+          "src": "/favicon.ico",
+          "sizes": "16x16 32x32"
+        }
+      ]
+    },
+    {
+      "name": "情绪测评",
+      "short_name": "测评",
+      "description": "进行情绪状态评估",
+      "url": "/?action=mood-test",
+      "icons": [
+        {
+          "src": "/favicon.ico",
+          "sizes": "16x16 32x32"
+        }
+      ]
+    },
+    {
+      "name": "紧急求助",
+      "short_name": "求助",
+      "description": "获取紧急心理援助",
+      "url": "/?action=emergency",
+      "icons": [
+        {
+          "src": "/favicon.ico",
+          "sizes": "16x16 32x32"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "handle_links": "preferred",
+  "protocol_handlers": [
+    {
+      "protocol": "web+omnisolace",
+      "url": "/?protocol=%s"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "/",
+      "accept": {
+        "application/json": [".json"]
+      },
+      "launch_type": "single-client"
+    }
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}
