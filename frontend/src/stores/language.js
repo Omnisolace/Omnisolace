@@ -513,7 +513,10 @@ const translations = {
     regenerateMessage: '重新生成',
     likeMessage: '点赞',
     dislikeMessage: '踩',
-    editMessage: '编辑消息'
+    editMessage: '编辑消息',
+    stopOutput: '停止回答',
+    outputStopped: '输出已停止',
+    stopOutputFailed: '停止输出失败'
   },
   
   en: {
@@ -1024,7 +1027,10 @@ const translations = {
     regenerateMessage: 'Regenerate',
     likeMessage: 'Like',
     dislikeMessage: 'Dislike',
-    editMessage: 'Edit Message'
+    editMessage: 'Edit Message',
+    stopOutput: 'Stop Answering',
+    outputStopped: 'Output Stopped',
+    stopOutputFailed: 'Failed to Stop Output'
   }
 }
 

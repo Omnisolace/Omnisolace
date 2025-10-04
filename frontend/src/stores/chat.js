@@ -16,6 +16,7 @@ export const useChatStore = defineStore('chat', () => {
   const isRecording = ref(false)
   const chatHistory = ref([]) // 历史对话列表
   const currentChatId = ref(null)
+  const streamingControllers = ref(new Map()) // 存储流式响应的控制器
   
   // 情绪标签映射
   const emotionLabels = {
@@ -243,6 +244,10 @@ export const useChatStore = defineStore('chat', () => {
       }
       messages.value.push(aiMessage)
       
+      // 创建AbortController用于停止流式响应
+      const controller = new AbortController()
+      streamingControllers.value.set(aiMessageId, controller)
+      
       // 使用流式响应
       await chatService.sendMessageStream(
         content,
@@ -304,29 +309,60 @@ export const useChatStore = defineStore('chat', () => {
             currentChatId.value = complete.sessionId
             chatService.setCurrentSessionId(complete.sessionId)
           }
+          
+          // 清理控制器
+          streamingControllers.value.delete(aiMessageId)
         },
         // onError回调
         (error) => {
           console.error('流式响应错误:', error)
+          
+          // 检查是否是用户主动停止（使用isAbort标志）
+          const isAbortError = error.isAbort === true
+          
           const messageIndex = messages.value.findIndex(m => m.id === aiMessageId)
           if (messageIndex !== -1) {
-            messages.value[messageIndex].content = '抱歉，AI服务暂时不可用，请稍后再试。'
+            if (!isAbortError) {
+              // 只有在非中止错误时才显示错误消息
+              messages.value[messageIndex].content = '抱歉，AI服务暂时不可用，请稍后再试。'
+            }
             messages.value[messageIndex].isStreaming = false
           }
+          
+          // 清理控制器
+          streamingControllers.value.delete(aiMessageId)
         },
         // 传递选项参数
-        options
+        options,
+        // 传递AbortController
+        controller
       )
       
     } catch (error) {
       console.error('发送消息失败:', error)
-      // 移除可能添加的消息
-      if (aiMessageId) { // 确保 aiMessageId 已被赋值
-        messages.value = messages.value.filter(m => m.id !== aiMessageId)
+      
+      // 检查是否是用户主动停止（AbortError）
+      const isAbortError = error.name === 'AbortError' || error.message.includes('aborted')
+      
+      if (!isAbortError) {
+        // 只有在非中止错误时才移除消息
+        if (aiMessageId) {
+          messages.value = messages.value.filter(m => m.id !== aiMessageId)
+        }
+        throw error
+      } else {
+        // 如果是中止错误，只更新消息状态，不删除消息
+        const messageIndex = messages.value.findIndex(m => m.id === aiMessageId)
+        if (messageIndex !== -1) {
+          messages.value[messageIndex].isStreaming = false
+        }
       }
-      throw error
     } finally {
       setLoading(false)
+      // 清理控制器
+      if (aiMessageId) {
+        streamingControllers.value.delete(aiMessageId)
+      }
     }
   }
   
@@ -371,6 +407,26 @@ export const useChatStore = defineStore('chat', () => {
         currentChatId.value = null
         messages.value = []
       }
+    }
+  }
+
+  /**
+   * 停止流式响应
+   */
+  const stopStreamingResponse = async (messageId) => {
+    try {
+      // 获取对应的控制器
+      const controller = streamingControllers.value.get(messageId)
+      if (controller) {
+        // 中止流式响应
+        controller.abort()
+        streamingControllers.value.delete(messageId)
+        
+        console.log('流式响应已停止:', messageId)
+      }
+    } catch (error) {
+      console.error('停止流式响应失败:', error)
+      // 不抛出错误，避免影响UI状态
     }
   }
 
@@ -428,6 +484,7 @@ export const useChatStore = defineStore('chat', () => {
     
     // 新的API集成方法
     sendMessageToBackend,
-    loadChatHistory
+    loadChatHistory,
+    stopStreamingResponse
   }
 })
