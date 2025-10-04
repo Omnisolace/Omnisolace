@@ -792,8 +792,27 @@
                                    :class="speechStore.isListening ? 'text-white' : 'text-gray-600'" />
                   </button>
 
-                  <!-- 发送按钮 -->
+                  <!-- 发送/停止按钮 -->
+                  <!-- 当AI正在生成内容时显示停止按钮 -->
                   <button
+                    v-if="isAIStreaming"
+                    @click="stopStreaming"
+                    :class="[
+                      'flex-shrink-0 rounded-full transition-all duration-200 flex items-center justify-center',
+                      userStore.isElderMode ? 'w-10 h-10' : 'w-8 h-8',
+                      'bg-primary-500 hover:bg-primary-600 active:scale-95'
+                    ]"
+                    :title="t('stopOutput')"
+                  >
+                    <!-- 停止图标：白色正方形 -->
+                    <svg class="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <rect x="6" y="6" width="12" height="12" />
+                    </svg>
+                  </button>
+                  
+                  <!-- 正常发送按钮 -->
+                  <button
+                    v-else
                     @click="sendMessage"
                     :disabled="!inputMessage.trim() || chatStore.isLoading"
                     :class="[
@@ -803,6 +822,7 @@
                         ? 'bg-gray-100 cursor-not-allowed' 
                         : 'bg-primary-500 hover:bg-primary-600 active:scale-95'
                     ]"
+                    :title="t('send')"
                   >
                     <PaperAirplaneIcon class="h-4 w-4 text-white" />
                   </button>
@@ -1067,6 +1087,11 @@ const filteredChatHistory = computed(() => {
   )
 })
 
+// 判断AI是否正在流式输出
+const isAIStreaming = computed(() => {
+  return chatStore.messages.some(message => message.type === 'ai' && message.isStreaming)
+})
+
 // 计算属性
 const getWelcomeTitle = () => {
   const titles = {
@@ -1137,12 +1162,18 @@ const sendMessage = async () => {
     // 后端已经处理了情绪识别，这里不需要额外处理
     
   } catch (error) {
-    console.error('发送消息失败:', error)
+    // 检查是否是中止错误（用户主动停止）
+    const isAbortError = error.name === 'AbortError' || error.message?.includes('aborted')
     
-    // 显示错误提示
-    if (window.$notification) {
-      window.$notification.error('发送消息失败，请稍后重试')
+    if (!isAbortError) {
+      console.error('发送消息失败:', error)
+      
+      // 只有在非中止错误时才显示错误提示
+      if (window.$notification) {
+        window.$notification.error('发送消息失败，请稍后重试')
+      }
     }
+    // 中止错误不显示错误信息，因为这是用户主动操作
   }
 }
 
@@ -1182,6 +1213,47 @@ const toggleVoiceInput = async () => {
 const sendQuickTopic = (topic) => {
   inputMessage.value = topic
   sendMessage()
+}
+
+// 停止流式响应
+const stopStreaming = async () => {
+  try {
+    // 找到正在流式输出的AI消息
+    const streamingMessage = chatStore.messages.find(message => 
+      message.type === 'ai' && message.isStreaming
+    )
+    
+    if (streamingMessage) {
+      // 先更新消息状态，停止流式输出，保留已生成的内容
+      const messageIndex = chatStore.messages.findIndex(m => m.id === streamingMessage.id)
+      if (messageIndex !== -1) {
+        chatStore.messages[messageIndex].isStreaming = false
+      }
+      
+      // 然后停止流式响应（这会中止网络请求，但不会影响已保存的内容）
+      await chatStore.stopStreamingResponse(streamingMessage.id)
+      
+      if (window.$notification) {
+        window.$notification.success(t('outputStopped'))
+      }
+    }
+  } catch (error) {
+    console.error('停止流式响应失败:', error)
+    // 即使停止失败，也要确保消息状态更新
+    const streamingMessage = chatStore.messages.find(message => 
+      message.type === 'ai' && message.isStreaming
+    )
+    if (streamingMessage) {
+      const messageIndex = chatStore.messages.findIndex(m => m.id === streamingMessage.id)
+      if (messageIndex !== -1) {
+        chatStore.messages[messageIndex].isStreaming = false
+      }
+    }
+    
+    if (window.$notification) {
+      window.$notification.success(t('outputStopped'))
+    }
+  }
 }
 
 const createNewChat = async () => {

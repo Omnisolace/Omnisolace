@@ -89,7 +89,7 @@ export class ChatService {
   /**
    * 发送消息（流式响应）
    */
-  async sendMessageStream(content, messageType = 'text', sessionId = null, onChunk = null, onComplete = null, onError = null, options = {}) {
+  async sendMessageStream(content, messageType = 'text', sessionId = null, onChunk = null, onComplete = null, onError = null, options = {}, abortController = null) {
     try {
       const messageData = {
         content,
@@ -106,7 +106,7 @@ export class ChatService {
       const url = `${baseUrl}/v1/chat/send/`;
 
       // 使用fetch API支持流式响应
-      const response = await fetch(url, {
+      const fetchOptions = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -114,7 +114,14 @@ export class ChatService {
           'Accept': 'text/event-stream'
         },
         body: JSON.stringify(messageData)
-      })
+      }
+      
+      // 如果提供了AbortController，添加到请求选项中
+      if (abortController) {
+        fetchOptions.signal = abortController.signal
+      }
+      
+      const response = await fetch(url, fetchOptions)
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -191,8 +198,27 @@ export class ChatService {
       }
     } catch (error) {
       console.error('发送流式消息失败:', error)
-      if (onError) onError({ type: 'error', message: error.message })
-      throw error
+      
+      // 检查是否是中止错误
+      const isAbortError = error.name === 'AbortError' || error.message.includes('aborted')
+      
+      if (onError) {
+        onError({ 
+          type: 'error', 
+          message: error.message,
+          isAbort: isAbortError 
+        })
+      }
+      
+      // 如果不是中止错误，才抛出异常
+      if (!isAbortError) {
+        throw error
+      }
+      // 如果是中止错误，不抛出异常，正常返回
+      return {
+        sessionId: null,
+        fullContent: ''
+      }
     }
   }
 
