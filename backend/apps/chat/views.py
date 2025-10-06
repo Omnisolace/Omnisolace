@@ -181,11 +181,11 @@ class SendMessageView(APIView):
                 )
                 
                 # 情绪分析
-                emotion_result = ai_service.analyze_emotion(content)
+                # emotion_result = ai_service.analyze_emotion(content) # 此行已弃用
                 
-                if emotion_result:
-                    user_message.emotion_data = emotion_result
-                    user_message.save()
+                # if emotion_result:
+                #     user_message.emotion_data = emotion_result
+                #     user_message.save()
                     
                     # 记录情绪日志
                     # emotion_service.create_emotion_log(
@@ -449,22 +449,52 @@ class SendMessageView(APIView):
     def _create_ai_message_async(self, session, response_content, thinking_content="", thinking_time=0):
         """创建AI消息的异步版本"""
         with transaction.atomic():
+            # 解析情绪数据（如果存在）
+            final_content = response_content
+            emotion_data = None
+            
+            if '|||' in response_content:
+                parts = response_content.split('|||')
+                final_content = parts[0].strip()
+                emotion_json_string = parts[1]
+                
+                try:
+                    # 提取纯JSON（移除markdown标记）
+                    first_brace = emotion_json_string.find('{')
+                    last_brace = emotion_json_string.rfind('}')
+                    
+                    if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+                        json_string = emotion_json_string[first_brace:last_brace + 1]
+                        emotion_data = json.loads(json_string)
+                        logger.info(f"成功解析情绪数据: {emotion_data}")
+                except Exception as e:
+                    logger.error(f"解析情绪数据失败: {e}")
+            
             # 创建消息对象
             message = ChatMessage.objects.create(
                 session=session,
-                content=response_content,
+                content=final_content,  # 保存纯净的内容（不含情绪JSON）
                 message_type=ChatMessage.MessageType.TEXT,
                 sender_type=ChatMessage.SenderType.AI,
-                ai_model='deepseek-chat'
+                ai_model='deepseek-chat',
+                emotion_data=emotion_data  # 保存情绪数据
             )
             
-            # 如果有思考内容，保存到metadata中
+            # 构建metadata
+            metadata = {}
+            
+            # 如果有思考内容，添加到metadata
             if thinking_content:
-                message.metadata = {
-                    'thinking_content': thinking_content,
-                    'thinking_time': thinking_time,
-                    'has_thinking': True
-                }
+                metadata['thinking_content'] = thinking_content
+                metadata['thinking_time'] = thinking_time
+                metadata['has_thinking'] = True
+            
+            # 如果有情绪数据，也添加到metadata（方便前端访问）
+            if emotion_data:
+                metadata['emotion_analysis'] = emotion_data
+            
+            if metadata:
+                message.metadata = metadata
                 message.save()
             
             return message
