@@ -516,7 +516,11 @@ const translations = {
     editMessage: '编辑消息',
     stopOutput: '停止回答',
     outputStopped: '输出已停止',
-    stopOutputFailed: '停止输出失败'
+    stopOutputFailed: '停止输出失败',
+    notEnoughDataForTrend: '暂无足够数据生成趋势图',
+    aiThinking: '正在思考...',
+    aiResponding: '正在输出...',
+    generatingEmotionData: '正在生成情绪分析和个性化建议...'
   },
   
   en: {
@@ -1030,7 +1034,11 @@ const translations = {
     editMessage: 'Edit Message',
     stopOutput: 'Stop Answering',
     outputStopped: 'Output Stopped',
-    stopOutputFailed: 'Failed to Stop Output'
+    stopOutputFailed: 'Failed to Stop Output',
+    notEnoughDataForTrend: 'Not enough data to generate trend chart',
+    aiThinking: 'Thinking...',
+    aiResponding: 'Responding...',
+    generatingEmotionData: 'Generating emotion analysis and personalized suggestions...'
   }
 }
 
