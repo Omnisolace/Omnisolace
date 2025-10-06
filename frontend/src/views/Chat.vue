@@ -46,7 +46,7 @@
                       chatStore.currentEmotionLabel.color,
                       { 'text-sm': userStore.isElderMode }
                     ]">
-                {{ chatStore.currentEmotionLabel.name }}
+                {{ chatStore.currentEmotionDisplayName }}
               </span>
             </div>
             
@@ -99,7 +99,7 @@
                       chatStore.currentEmotionLabel.color,
                       { 'text-elder-sm': userStore.isElderMode }
                     ]">
-                {{ chatStore.currentEmotionLabel.name }}
+                {{ chatStore.currentEmotionDisplayName }}
               </span>
             </div>
             
@@ -502,7 +502,7 @@
                           :class="{ 'text-elder-sm': userStore.isElderMode }">
                       {{ formatTime(message.timestamp) }}
                       <span v-if="message.isStreaming" class="ml-2 text-primary-500">
-                        {{ message.thinking ? '正在思考...' : '正在输出...' }}
+                        {{ getStreamingStatusText(message) }}
                       </span>
                     </span>
                   </div>
@@ -867,65 +867,79 @@
         
         <!-- 当前情绪 -->
         <div class="mb-6">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-sm font-medium text-gray-700"
-                  :class="{ 'text-elder-sm': userStore.isElderMode }">
-              {{ t('currentEmotion') }}
-            </span>
+          <span class="text-sm font-medium text-gray-700 block mb-2"
+                :class="{ 'text-elder-sm': userStore.isElderMode }">
+            {{ t('currentEmotion') }}
+          </span>
+          <div class="flex items-center space-x-2">
             <div class="emotion-indicator"
                  :class="[
                    chatStore.currentEmotionLabel.bgColor,
                    { 'w-5 h-5': userStore.isElderMode }
                  ]">
             </div>
-          </div>
-          <p class="text-lg font-semibold"
-             :class="[
-               chatStore.currentEmotionLabel.color,
-               { 'text-elder-base': userStore.isElderMode }
-             ]">
-            {{ chatStore.currentEmotionLabel.name }}
-          </p>
-          <div class="mt-2 bg-gray-200 rounded-full h-2">
-            <div class="bg-primary-500 h-2 rounded-full transition-all duration-300"
-                 :style="{ width: `${chatStore.currentEmotion.score}%` }">
-            </div>
+            <p class="text-lg font-semibold"
+               :class="[
+                 chatStore.currentEmotionLabel.color,
+                 { 'text-elder-base': userStore.isElderMode }
+               ]">
+              {{ chatStore.currentEmotionDisplayName }}
+            </p>
           </div>
         </div>
 
         <!-- 情绪趋势 -->
         <div class="mb-6">
-          <h4 class="text-sm font-medium text-gray-700 mb-3"
-              :class="{ 'text-elder-sm': userStore.isElderMode }">
-            {{ t('emotionTrend') }}
-          </h4>
-          <div class="space-y-2">
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600"
-                    :class="{ 'text-elder-sm': userStore.isElderMode }">
-                {{ t('overallStatus') }}
-              </span>
-              <span class="text-sm font-medium"
-                    :class="[
-                      getTrendColor(),
-                      { 'text-elder-sm': userStore.isElderMode }
-                    ]">
-                {{ getTrendText() }}
-              </span>
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="text-base font-semibold text-gray-800"
+                :class="{ 'text-elder-base': userStore.isElderMode }">
+              {{ t('emotionTrend') }}
+            </h4>
+            <div class="relative group">
+              <svg class="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+              </svg>
+              <!-- Tooltip -->
+              <div v-if="currentLanguage === 'zh'" class="absolute right-0 top-6 w-64 bg-white text-gray-800 text-xs rounded-lg p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 shadow-xl border border-gray-200">
+                <p class="font-semibold mb-2 text-sm">关于情绪趋势图</p>
+                <p class="mb-2"><strong>情绪分数：</strong>范围从 -10（极度负面）到 +10（极度正面），0 代表平静中立。</p>
+                <p class="mb-2"><strong>计算方式：</strong>AI 根据您的对话内容，分析情绪词汇、语气和上下文，综合判断当前情绪状态。</p>
+                <p><strong>记录范围：</strong>最多记录最近 100 轮对话的情绪变化。</p>
+                <div class="absolute -top-1 right-4 w-2 h-2 bg-white border-t border-l border-gray-200 transform rotate-45"></div>
+              </div>
+              <div v-else class="absolute right-0 top-6 w-64 bg-white text-gray-800 text-xs rounded-lg p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 shadow-xl border border-gray-200">
+                <p class="font-semibold mb-2 text-sm">About Emotion Trend Chart</p>
+                <p class="mb-2"><strong>Emotion Score:</strong> Ranges from -10 (extremely negative) to +10 (extremely positive), with 0 representing calm and neutral.</p>
+                <p class="mb-2"><strong>Calculation:</strong> AI analyzes your conversation content, emotion words, tone, and context to comprehensively assess your current emotional state.</p>
+                <p><strong>Record Range:</strong> Records up to the last 100 conversation rounds of emotion changes.</p>
+                <div class="absolute -top-1 right-4 w-2 h-2 bg-white border-t border-l border-gray-200 transform rotate-45"></div>
+              </div>
             </div>
+          </div>
+          <div v-if="chatStore.emotionHistory.length > 1">
+            <EmotionTrendChart 
+              :emotion-history="chatStore.emotionHistory" 
+              :primary-color="getPrimaryColor()" 
+            />
+          </div>
+          <div v-else class="h-48 flex items-center justify-center text-center text-sm text-gray-500 bg-gray-50 rounded-lg">
+            <p>{{ t('notEnoughDataForTrend') }}</p>
           </div>
         </div>
 
         <!-- 建议 -->
         <div>
-          <h4 class="text-sm font-medium text-gray-700 mb-3"
-              :class="{ 'text-elder-sm': userStore.isElderMode }">
+          <h4 class="text-base font-semibold text-gray-800 mb-3"
+              :class="{ 'text-elder-base': userStore.isElderMode }">
             {{ t('personalizedSuggestions') }}
           </h4>
           <div class="space-y-2">
-            <div v-for="suggestion in emotionSuggestions" :key="suggestion.id"
-                 class="p-3 rounded-lg" style="background-color: var(--color-primary-50);">
-              <p class="text-sm text-gray-700"
+            <div v-for="(suggestion, index) in emotionSuggestions" :key="suggestion.id"
+                 class="p-3 rounded-lg flex items-start" style="background-color: var(--color-primary-50);">
+              <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-500 text-white text-xs font-bold mr-2 flex-shrink-0 mt-0.5">
+                {{ index + 1 }}
+              </span>
+              <p class="text-sm text-gray-700 flex-1"
                  :class="{ 'text-elder-sm': userStore.isElderMode }">
                 {{ suggestion.text }}
               </p>
@@ -989,7 +1003,8 @@ import EmergencyModal from '@/components/EmergencyModal.vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 import PositiveFeedbackModal from '@/components/PositiveFeedbackModal.vue'
 import NegativeFeedbackModal from '@/components/NegativeFeedbackModal.vue'
-import { t } from '@/stores/language'
+import EmotionTrendChart from '@/components/EmotionTrendChart.vue' // 引入图表组件
+import { t, currentLanguage } from '@/stores/language'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -1061,18 +1076,8 @@ const quickTopics = computed(() => {
 
 // 情绪建议
 const emotionSuggestions = computed(() => {
-  const suggestions = [
-    { id: 1, text: t('deepBreathing') },
-    { id: 2, text: t('moderateExercise') },
-    { id: 3, text: t('adequateSleep') }
-  ]
-  
-  // 根据当前情绪状态提供个性化建议
-  if (chatStore.currentEmotion.label === 'anxious') {
-    suggestions.unshift({ id: 0, text: t('mindfulnessMeditation') })
-  }
-  
-  return suggestions
+  // 直接使用 store 中的建议
+  return chatStore.emotionSuggestions
 })
 
 // 过滤后的聊天历史
@@ -1149,15 +1154,17 @@ const sendMessage = async () => {
     textInput.value.style.height = 'auto'
   }
   
+  // 立即滚动到底部（用户发送消息的瞬间）
+  nextTick(() => {
+    scrollToBottom()
+  })
+  
   try {
     // 使用真实的API发送消息，传递深度思考和联网搜索参数
     await chatStore.sendMessageToBackend(messageText, 'text', {
       deep_thinking: isDeepThinking.value,
       web_search: isWebSearch.value
     })
-    
-    // 滚动到底部
-    scrollToBottom()
     
     // 后端已经处理了情绪识别，这里不需要额外处理
     
@@ -1385,6 +1392,27 @@ const getTrendText = () => {
     case 'improving': return t('improving')
     case 'declining': return t('needsAttention')
     default: return t('stable')
+  }
+}
+
+// 获取主题色
+const getPrimaryColor = () => {
+  // 从 CSS 变量中读取主题色
+  const root = document.documentElement
+  const primaryColor = getComputedStyle(root).getPropertyValue('--color-primary-500').trim()
+  
+  // 如果能读取到 CSS 变量，返回它；否则返回默认的橙色
+  return primaryColor || '#fb923c'
+}
+
+// 获取流式输出状态文字
+const getStreamingStatusText = (message) => {
+  if (message.thinking) {
+    return t('aiThinking')
+  } else if (message.isGeneratingEmotion) {
+    return t('generatingEmotionData')
+  } else {
+    return t('aiResponding')
   }
 }
 
@@ -1752,7 +1780,28 @@ const getAIResponseOnly = async (content, options = {}) => {
         if (chunk.type === 'chunk') {
           const messageIndex = chatStore.messages.findIndex(m => m.id === aiMessageId)
           if (messageIndex !== -1) {
-            chatStore.messages[messageIndex].content += chunk.content
+            const currentContent = chatStore.messages[messageIndex].content
+            
+            // 如果已经开始情绪数据部分，不再追加任何内容，并更新状态提示
+            if (chatStore.messages[messageIndex]._emotionDataStarted) {
+              chatStore.messages[messageIndex].isGeneratingEmotion = true
+              return
+            }
+            
+            // 将新chunk与当前内容合并
+            const newContent = currentContent + chunk.content
+            
+            // 检查合并后的内容是否包含分隔符
+            if (newContent.includes('|||')) {
+              // 只保留分隔符之前的部分（不包含|||）
+              const beforeSeparator = newContent.split('|||')[0]
+              chatStore.messages[messageIndex].content = beforeSeparator.trimEnd()
+              chatStore.messages[messageIndex]._emotionDataStarted = true
+              chatStore.messages[messageIndex].isGeneratingEmotion = true
+            } else {
+              // 正常追加
+              chatStore.messages[messageIndex].content = newContent
+            }
           }
         } else if (chunk.type === 'thinking') {
           const messageIndex = chatStore.messages.findIndex(m => m.id === aiMessageId)
@@ -1774,8 +1823,33 @@ const getAIResponseOnly = async (content, options = {}) => {
       (complete) => {
         const messageIndex = chatStore.messages.findIndex(m => m.id === aiMessageId)
         if (messageIndex !== -1) {
-          chatStore.messages[messageIndex].content = complete.fullContent
+          let finalContent = complete.fullContent
+
+          // 增强：解析情绪数据
+          if (finalContent.includes('|||')) {
+            const parts = finalContent.split('|||')
+            finalContent = parts[0].trim()
+            const emotionJsonString = parts[1]
+            try {
+              // 修复：直接找到第一个 { 和最后一个 } 之间的内容
+              const firstBrace = emotionJsonString.indexOf('{')
+              const lastBrace = emotionJsonString.lastIndexOf('}')
+              
+              if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+                const jsonString = emotionJsonString.substring(firstBrace, lastBrace + 1)
+                const emotionData = JSON.parse(jsonString)
+                chatStore.parseAndSetEmotionData(emotionData)
+              } else {
+                console.warn('在情绪分析块中未找到有效的JSON对象:', emotionJsonString)
+              }
+            } catch (e) {
+              console.error('解析情绪JSON失败:', e, '原始字符串:', emotionJsonString)
+            }
+          }
+          
+          chatStore.messages[messageIndex].content = finalContent
           chatStore.messages[messageIndex].isStreaming = false
+          chatStore.messages[messageIndex].isGeneratingEmotion = false // 清除情绪生成标志
           chatStore.messages[messageIndex].id = complete.messageId
           
           if (chatStore.messages[messageIndex].thinkingStartTime) {

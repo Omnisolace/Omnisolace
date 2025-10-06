@@ -55,6 +55,31 @@ class DeepSeekAIService:
             "content": user_message
         })
         
+        # 添加用于情绪分析的附加指令
+        emotion_analysis_prompt = """
+
+---
+你的任务：
+1. 像心理伙伴一样，正常地、共情地回答用户的上述问题。
+2. 在你的回答内容结束后，请另起一行，并附加一个特殊的分隔符 `|||`。
+3. 在分隔符后面，提供一个 JSON 对象，包含对用户问题的分析。JSON 结构必须如下：
+```json
+{
+  "emotion_words": ["焦虑", "疲惫"],
+  "emotion_score": -7,
+  "suggestions": [
+    "尝试正念冥想，每天安排10分钟的独处时间。",
+    "将大的工作任务分解成小的、可执行的步骤。",
+    "下班后进行半小时的散步或慢跑，帮助释放压力。"
+  ]
+}
+```
+**请注意：** `emotion_score` 是一个在 -10 (极度负面) 到 +10 (极度正面) 之间的整数。`emotion_words` 必须是1到2个描述性词语。`suggestions` 必须是3条简短实用的建议。确保JSON格式正确无误。
+"""
+        # 将附加指令附加到用户消息内容的末尾
+        if len(messages) > 0 and messages[-1]["role"] == "user":
+            messages[-1]["content"] += emotion_analysis_prompt
+        
         return messages
     
     def _get_system_prompt(self, age_group: str) -> str:
@@ -245,35 +270,12 @@ class DeepSeekAIService:
             pass
     
     def analyze_emotion(self, text: str) -> Dict[str, Any]:
-        """分析文本情绪（简化版）"""
-        # 这里可以集成更复杂的情绪分析模型
-        # 目前使用简单的关键词匹配
-        emotion_keywords = {
-            'happy': ['开心', '高兴', '快乐', '兴奋', '满意', '愉快', 'happy', 'joy', 'excited'],
-            'sad': ['难过', '伤心', '沮丧', '失望', '痛苦', 'sad', 'depressed', 'down'],
-            'anxious': ['焦虑', '紧张', '担心', '害怕', '不安', 'anxious', 'nervous', 'worried'],
-            'angry': ['愤怒', '生气', '愤慨', '恼火', 'angry', 'mad', 'furious']
-        }
-        
-        text_lower = text.lower()
-        emotion_scores = {}
-        
-        for emotion, keywords in emotion_keywords.items():
-            score = sum(1 for keyword in keywords if keyword in text_lower)
-            if score > 0:
-                emotion_scores[emotion] = score
-        
-        if emotion_scores:
-            dominant_emotion = max(emotion_scores, key=emotion_scores.get)
-            confidence = min(emotion_scores[dominant_emotion] / len(text.split()) * 10, 1.0)
-        else:
-            dominant_emotion = 'neutral'
-            confidence = 0.5
-        
+        """分析文本情绪（此方法已弃用，功能合并到主AI响应中）"""
+        logger.warning("analyze_emotion 方法已被弃用，情绪分析功能已集成到 stream_response 和 generate_response 中。")
         return {
-            'emotion': dominant_emotion,
-            'confidence': confidence,
-            'scores': emotion_scores
+            'emotion': 'neutral',
+            'confidence': 0.5,
+            'scores': {}
         }
 
 
