@@ -146,6 +146,17 @@ const handleOffline = () => {
   console.log('网络已断开')
 }
 
+// 危机预警事件处理器
+const handleCrisisDetected = (event) => {
+  // 只在弹窗未显示时触发，避免重复打开
+  if (!showEmergencyModal.value) {
+    console.warn('🚨 [App.vue] 检测到危机事件，自动弹出紧急求助弹窗')
+    showEmergencyModal.value = true
+  } else {
+    console.log('🚨 [App.vue] 危机弹窗已显示，跳过重复打开')
+  }
+}
+
 // 生命周期
 onMounted(() => {
   initializeApp()
@@ -154,6 +165,9 @@ onMounted(() => {
   window.addEventListener('error', handleGlobalError)
   window.addEventListener('online', handleOnline)
   window.addEventListener('offline', handleOffline)
+  
+  // 监听危机预警事件（全局）
+  window.addEventListener('crisis-detected', handleCrisisDetected)
   
   // 监听紧急求助快捷键（Ctrl+Shift+H）
   window.addEventListener('keydown', (e) => {
@@ -168,6 +182,7 @@ onUnmounted(() => {
   window.removeEventListener('error', handleGlobalError)
   window.removeEventListener('online', handleOnline)
   window.removeEventListener('offline', handleOffline)
+  window.removeEventListener('crisis-detected', handleCrisisDetected)
 })
 </script>
 

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { chatService } from '@/services/chatService'
+import { t } from './language'
 
 export const useChatStore = defineStore('chat', () => {
   // 状态
@@ -18,6 +19,7 @@ export const useChatStore = defineStore('chat', () => {
   const currentChatId = ref(null)
   const streamingControllers = ref(new Map()) // 存储流式响应的控制器
   const emotionSuggestions = ref([]) // 新增：存储个性化建议
+  const lastCrisisAlertTime = ref(0) // 上次危机预警时间（防止重复触发）
   
   // 情绪标签映射
   const emotionLabels = {
@@ -72,10 +74,26 @@ export const useChatStore = defineStore('chat', () => {
   
   const hasMessages = computed(() => messages.value.length > 0)
   
-  // 危机预警关键词
+  // 危机预警关键词（扩展版）
   const crisisKeywords = [
-    '想死', '自杀', '结束生命', '不想活', '活着没意思',
-    '自伤', '自残', '伤害自己', '想消失', '解脱'
+    // 自杀相关
+    '想死', '自杀', '结束生命', '不想活', '活着没意思', '不想活了',
+    '去死', '寻死', '轻生', '了结', '一了百了', '自我了断',
+    
+    // 自伤相关
+    '自伤', '自残', '伤害自己', '割腕', '跳楼', '上吊', '服药',
+    '自我伤害', '弄伤自己', '伤害身体',
+    
+    // 绝望相关
+    '想消失', '解脱', '活不下去', '没有希望', '彻底绝望',
+    '生无可恋', '行尸走肉', '没有意义', '毫无价值',
+    
+    // 极端行为
+    '遗书', '告别', '最后一次', '永别', '再见了',
+    '安排后事', '交代遗言',
+    
+    // 崩溃状态
+    '崩溃了', '撑不下去', '无法承受', '精神崩溃', '崩溃边缘'
   ]
   
   // 方法
@@ -116,10 +134,81 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  // 生成危机消息（支持动态翻译）
+  const generateCrisisMessage = (crisisLevel) => {
+    if (crisisLevel === 3) {
+      return `${t('crisisEmergencyHigh')}
+
+${t('crisisActionImmediate')}
+• ${t('crisisHotline1')}
+• ${t('crisisHotline2')}
+• ${t('crisisEmergencyButton')}
+• ${t('crisisContactEmergency')}
+
+${t('crisisLifePrecious')}`
+    } else {
+      return `${t('crisisMediumWarning')}
+
+${t('crisisSuggestions')}
+• ${t('crisisFeelOverwhelmed')}
+• ${t('crisisGetProfessional')}
+• ${t('crisisSeekCounselor')}
+
+${t('crisisSeekingHelpBrave')}`
+    }
+  }
+
   // 新增：解析并更新情绪数据的方法
   const parseAndSetEmotionData = (emotionData) => {
     console.log('🔍 parseAndSetEmotionData 接收到的数据:', emotionData)
     if (!emotionData || typeof emotionData !== 'object') return
+
+    // 检查危机等级并触发预警
+    if (emotionData.crisis_level !== undefined) {
+      const crisisLevel = parseInt(emotionData.crisis_level)
+      console.log('🚨 AI检测到的危机等级:', crisisLevel)
+      
+      if (crisisLevel >= 2) {
+        // 中度或高度危机，触发预警
+        // 存储翻译键而不是翻译后的文本，以支持动态语言切换
+        const crisisMessageData = crisisLevel === 3 
+          ? {
+              type: 'crisis-high',
+              keys: [
+                'crisisEmergencyHigh',
+                'crisisActionImmediate',
+                'crisisHotline1',
+                'crisisHotline2',
+                'crisisEmergencyButton',
+                'crisisContactEmergency',
+                'crisisLifePrecious'
+              ]
+            }
+          : {
+              type: 'crisis-medium',
+              keys: [
+                'crisisMediumWarning',
+                'crisisSuggestions',
+                'crisisFeelOverwhelmed',
+                'crisisGetProfessional',
+                'crisisSeekCounselor',
+                'crisisSeekingHelpBrave'
+              ]
+            }
+
+        addMessage({
+          content: generateCrisisMessage(crisisLevel),
+          type: 'system',
+          crisisData: crisisMessageData  // 存储翻译键数据以支持动态翻译
+        })
+        
+        // 如果是高度危机，触发完整的危机预警流程
+        if (crisisLevel === 3) {
+          const crisisDetectedMsg = t('crisisDetectedByAI').replace('{level}', crisisLevel)
+          triggerCrisisAlert(crisisDetectedMsg, [`crisis_level_${crisisLevel}`])
+        }
+      }
+    }
 
     // 更新情绪建议
     if (Array.isArray(emotionData.suggestions)) {
@@ -313,27 +402,93 @@ export const useChatStore = defineStore('chat', () => {
     )
     
     if (hasCrisisKeyword) {
+      // 记录触发的关键词
+      const triggeredKeywords = crisisKeywords.filter(keyword => content.includes(keyword))
+      
+      const crisisActionList = t('crisisActionList')
+      const crisisHotline1 = t('crisisHotline1')
+      const crisisHotline2 = t('crisisHotline2')
+      const crisisEmergencyButton = t('crisisEmergencyButton')
+      const crisisNotAlone = t('crisisNotAlone')
+      
       // 触发危机预警
       addMessage({
-        content: '我注意到您可能遇到了困难。如果您正在经历危机，请立即寻求专业帮助。您可以拨打心理援助热线：400-161-9995，或点击下方的紧急求助按钮。',
+        content: `${t('crisisWarningKeyword')}
+
+${crisisActionList}
+• ${crisisHotline1}
+• ${crisisHotline2}
+• ${crisisEmergencyButton}
+
+${crisisNotAlone}`,
         type: 'system'
       })
       
-      // 发送危机预警通知
-      triggerCrisisAlert(content)
+      // 发送危机预警通知到后端
+      triggerCrisisAlert(content, triggeredKeywords)
+      
+      return true // 返回是否检测到危机
     }
+    
+    return false
   }
   
-  const triggerCrisisAlert = (content) => {
-    // 这里应该调用后端API发送紧急通知
-    console.warn('危机预警触发:', content)
+  const triggerCrisisAlert = async (content, keywords = []) => {
+    console.warn('🚨 危机预警触发:', content, '关键词:', keywords)
     
-    // 可以在这里添加通知紧急联系人的逻辑
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('紧急提醒', {
-        body: '检测到用户可能需要紧急帮助',
-        icon: '/pwa-192x192.png'
+    // 防止5秒内重复触发
+    const now = Date.now()
+    if (now - lastCrisisAlertTime.value < 5000) {
+      console.log('🚨 危机预警已在5秒内触发过，跳过重复触发')
+      return
+    }
+    lastCrisisAlertTime.value = now
+    
+    try {
+      // 调用后端API记录危机事件
+      const { chatApi } = await import('@/utils/api')
+      await chatApi.reportCrisis({
+        content: content,
+        keywords: keywords,
+        session_id: currentChatId.value,
+        timestamp: Date.now()
+      }).catch(err => {
+        console.error('发送危机预警到后端失败:', err)
       })
+      
+      // 获取翻译文本
+      const notificationTitle = t('notificationEmergencyTitle')
+      const notificationBody = t('notificationEmergencyBody')
+      
+      // 浏览器通知
+      if ('Notification' in window) {
+        if (Notification.permission === 'granted') {
+          new Notification(notificationTitle, {
+            body: notificationBody,
+            icon: '/pwa-192x192.png',
+            requireInteraction: true
+          })
+        } else if (Notification.permission !== 'denied') {
+          // 请求通知权限
+          Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+              new Notification(notificationTitle, {
+                body: notificationBody,
+                icon: '/pwa-192x192.png',
+                requireInteraction: true
+              })
+            }
+          })
+        }
+      }
+      
+      // 触发全局事件，让 Chat.vue 自动弹出紧急求助弹窗
+      window.dispatchEvent(new CustomEvent('crisis-detected', { 
+        detail: { content, keywords } 
+      }))
+      
+    } catch (error) {
+      console.error('危机预警处理失败:', error)
     }
   }
   
@@ -811,6 +966,21 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
   
+  // 更新危机消息的翻译（当语言切换时调用）
+  const updateCrisisMessagesTranslation = () => {
+    messages.value = messages.value.map(msg => {
+      if (msg.type === 'system' && msg.crisisData) {
+        // 从危机数据中获取危机等级
+        const crisisLevel = msg.crisisData.type === 'crisis-high' ? 3 : 2
+        return {
+          ...msg,
+          content: generateCrisisMessage(crisisLevel)
+        }
+      }
+      return msg
+    })
+  }
+
   return {
     // 状态
     messages,
@@ -845,6 +1015,7 @@ export const useChatStore = defineStore('chat', () => {
     // 新的API集成方法
     sendMessageToBackend,
     loadChatHistory,
-    stopStreamingResponse
+    stopStreamingResponse,
+    updateCrisisMessagesTranslation
   }
 })
