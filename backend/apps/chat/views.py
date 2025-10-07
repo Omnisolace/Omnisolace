@@ -452,6 +452,7 @@ class SendMessageView(APIView):
             # 解析情绪数据（如果存在）
             final_content = response_content
             emotion_data = None
+            crisis_level = 0
             
             if '|||' in response_content:
                 parts = response_content.split('|||')
@@ -467,6 +468,13 @@ class SendMessageView(APIView):
                         json_string = emotion_json_string[first_brace:last_brace + 1]
                         emotion_data = json.loads(json_string)
                         logger.info(f"成功解析情绪数据: {emotion_data}")
+                        
+                        # 提取危机等级
+                        crisis_level = int(emotion_data.get('crisis_level', 0))
+                        
+                        # 如果检测到高危机等级，记录危机标记
+                        if crisis_level >= 2:
+                            logger.warning(f"🚨 检测到危机事件 - 等级{crisis_level}: {session.user.username}")
                 except Exception as e:
                     logger.error(f"解析情绪数据失败: {e}")
             
@@ -477,8 +485,14 @@ class SendMessageView(APIView):
                 message_type=ChatMessage.MessageType.TEXT,
                 sender_type=ChatMessage.SenderType.AI,
                 ai_model='deepseek-chat',
-                emotion_data=emotion_data  # 保存情绪数据
+                emotion_data=emotion_data,  # 保存情绪数据
+                crisis_detected=(crisis_level >= 2)  # 标记危机消息
             )
+            
+            # 如果检测到高度危机，标记会话为紧急状态
+            if crisis_level >= 3:
+                session.is_emergency = True
+                session.save(update_fields=['is_emergency'])
             
             # 构建metadata
             metadata = {}
@@ -492,6 +506,7 @@ class SendMessageView(APIView):
             # 如果有情绪数据，也添加到metadata（方便前端访问）
             if emotion_data:
                 metadata['emotion_analysis'] = emotion_data
+                metadata['crisis_level'] = crisis_level
             
             if metadata:
                 message.metadata = metadata
@@ -699,6 +714,51 @@ class ChatFeedbackView(APIView):
                 message="获取反馈失败",
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def report_crisis(request):
+    """
+    报告危机事件
+    """
+    try:
+        content = request.data.get('content', '')
+        keywords = request.data.get('keywords', [])
+        session_id = request.data.get('session_id')
+        
+        # 记录危机事件
+        logger.critical(f"🚨🚨🚨 危机事件报告 - 用户: {request.user.username}, 内容: {content}, 关键词: {keywords}")
+        
+        # 如果有会话ID，标记会话为紧急状态
+        if session_id:
+            try:
+                session = ChatSession.objects.get(id=session_id, user=request.user)
+                session.is_emergency = True
+                session.save(update_fields=['is_emergency'])
+            except ChatSession.DoesNotExist:
+                pass
+        
+        # TODO: 这里可以添加更多处理逻辑
+        # 1. 发送邮件通知管理员
+        # 2. 发送短信通知紧急联系人
+        # 3. 记录到专门的危机事件表
+        # 4. 触发自动工单系统
+        
+        return success_response(
+            message="危机事件已记录，请立即寻求专业帮助",
+            data={
+                'crisis_reported': True,
+                'helpline': '400-161-9995'
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"记录危机事件失败: {str(e)}")
+        return error_response(
+            message="记录失败，但请务必立即寻求专业帮助",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 @api_view(['POST'])

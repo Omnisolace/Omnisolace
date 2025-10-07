@@ -67,6 +67,7 @@ class DeepSeekAIService:
 {
   "emotion_words": ["焦虑", "疲惫"],
   "emotion_score": -7,
+  "crisis_level": 0,
   "suggestions": [
     "尝试正念冥想，每天安排10分钟的独处时间。",
     "将大的工作任务分解成小的、可执行的步骤。",
@@ -74,7 +75,22 @@ class DeepSeekAIService:
   ]
 }
 ```
-**请注意：** `emotion_score` 是一个在 -10 (极度负面) 到 +10 (极度正面) 之间的整数。`emotion_words` 必须是1到2个描述性词语。`suggestions` 必须是3条简短实用的建议。确保JSON格式正确无误。
+**重要说明：**
+- `emotion_score`：-10（极度负面）到 +10（极度正面）之间的整数
+- `emotion_words`：1到2个准确的情绪描述词（如"愤怒"、"焦虑"、"疲惫"、"崩溃"等）
+- `crisis_level`：危机等级，0-3 的整数
+  * 0 = 无危机（正常对话）
+  * 1 = 轻度关注（情绪低落但无危险）
+  * 2 = 中度预警（有自伤倾向或严重情绪问题）
+  * 3 = 高度危机（明确的自杀、自残意图或行为）
+- `suggestions`：3条简短实用的建议
+
+**危机评估标准**：
+- 包含"想死"、"自杀"、"自残"、"了结"、"不想活"等词语 → crisis_level=3
+- 表达"绝望"、"崩溃"、"撑不下去"等极端情绪 → crisis_level=2  
+- 一般负面情绪 → crisis_level=0或1
+
+确保JSON格式正确无误。
 """
         # 将附加指令附加到用户消息内容的末尾
         if len(messages) > 0 and messages[-1]["role"] == "user":
