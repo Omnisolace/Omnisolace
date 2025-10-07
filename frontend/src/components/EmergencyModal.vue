@@ -9,7 +9,8 @@
 
       <!-- 模态框内容 -->
       <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6"
-           :class="{ 'elder-modal': userStore.isElderMode }">
+           :class="{ 'elder-modal': userStore.isElderMode }"
+           @click.stop>
         
         <!-- 标题 -->
         <div class="sm:flex sm:items-start">
@@ -183,7 +184,7 @@ const handleContactClick = (contact) => {
     // 拨打电话
     if (contact.phone === '741741') {
       // 短信
-      window.open(`sms:${contact.phone}?body=帮助`)
+      window.open(`sms:${contact.phone}?body=${t('help')}`)
     } else {
       // 电话
       window.open(`tel:${contact.phone}`)
@@ -223,7 +224,7 @@ const logEmergencyEvent = (contact) => {
     userAgeGroup: userStore.ageGroup
   }
   
-  console.log('紧急求助事件:', eventData)
+  console.log(t('emergencyEventLogged') + ':', eventData)
   
   // 这里应该调用API记录事件
   // api.logEmergencyEvent(eventData)

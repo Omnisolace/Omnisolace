@@ -520,7 +520,38 @@ const translations = {
     notEnoughDataForTrend: '暂无足够数据生成趋势图',
     aiThinking: '正在思考...',
     aiResponding: '正在输出...',
-    generatingEmotionData: '正在生成情绪分析和个性化建议...'
+    generatingEmotionData: '正在生成情绪分析和个性化建议...',
+    
+    // 危机预警消息
+    crisisWarningKeyword: '⚠️ 我注意到您可能遇到了困难。如果您正在经历危机，请立即寻求专业帮助。',
+    crisisActionList: '您可以：',
+    crisisHotline1: '拨打心理援助热线：400-161-9995（24小时）',
+    crisisHotline2: '拨打生命热线：010-82951332',
+    crisisEmergencyButton: '点击右上角的紧急求助按钮获取更多帮助',
+    crisisNotAlone: '请记住，您并不孤单，总有人愿意帮助您。',
+    
+    crisisEmergencyHigh: '🚨 紧急情况！检测到您可能处于危机中。',
+    crisisActionImmediate: '请立即：',
+    crisisContactEmergency: '联系您的紧急联系人',
+    crisisLifePrecious: '您的生命很宝贵，请不要独自承受，立即寻求帮助！',
+    
+    crisisMediumWarning: '⚠️ 我注意到您的情绪状态需要特别关注。',
+    crisisSuggestions: '建议：',
+    crisisFeelOverwhelmed: '如果感到难以承受，请拨打心理援助热线：400-161-9995',
+    crisisGetProfessional: '点击右上角的紧急求助按钮获取专业支持',
+    crisisSeekCounselor: '考虑寻求专业心理咨询师的帮助',
+    crisisSeekingHelpBrave: '请记住，寻求帮助是勇敢的表现。',
+    
+    // 浏览器通知
+    notificationEmergencyTitle: '紧急提醒',
+    notificationEmergencyBody: '检测到您可能需要紧急帮助，请立即寻求专业支持',
+    
+    // 危机检测消息
+    crisisDetectedByAI: 'AI检测到高度危机（等级{level}）',
+    
+    // 紧急求助相关
+    help: '帮助',
+    emergencyEventLogged: '紧急求助事件'
   },
   
   en: {
@@ -1038,7 +1069,38 @@ const translations = {
     notEnoughDataForTrend: 'Not enough data to generate trend chart',
     aiThinking: 'Thinking...',
     aiResponding: 'Responding...',
-    generatingEmotionData: 'Generating emotion analysis and personalized suggestions...'
+    generatingEmotionData: 'Generating emotion analysis and personalized suggestions...',
+    
+    // Crisis warning messages
+    crisisWarningKeyword: '⚠️ I notice you may be experiencing difficulties. If you are in crisis, please seek professional help immediately.',
+    crisisActionList: 'You can:',
+    crisisHotline1: 'Call Mental Health Helpline: 400-161-9995 (24/7)',
+    crisisHotline2: 'Call Lifeline: 010-82951332',
+    crisisEmergencyButton: 'Click the emergency help button in the top right corner for more assistance',
+    crisisNotAlone: 'Please remember, you are not alone, there are always people willing to help you.',
+    
+    crisisEmergencyHigh: '🚨 Emergency! We detected you may be in crisis.',
+    crisisActionImmediate: 'Please immediately:',
+    crisisContactEmergency: 'Contact your emergency contacts',
+    crisisLifePrecious: 'Your life is precious. Please do not suffer alone, seek help immediately!',
+    
+    crisisMediumWarning: '⚠️ I notice your emotional state needs special attention.',
+    crisisSuggestions: 'Suggestions:',
+    crisisFeelOverwhelmed: 'If you feel overwhelmed, please call Mental Health Helpline: 400-161-9995',
+    crisisGetProfessional: 'Click the emergency help button in the top right corner for professional support',
+    crisisSeekCounselor: 'Consider seeking help from a professional counselor',
+    crisisSeekingHelpBrave: 'Please remember, seeking help is a sign of courage.',
+    
+    // Browser notifications
+    notificationEmergencyTitle: 'Emergency Alert',
+    notificationEmergencyBody: 'We detected you may need urgent help. Please seek professional support immediately',
+    
+    // Crisis detection messages
+    crisisDetectedByAI: 'AI detected high crisis (level {level})',
+    
+    // 紧急求助相关
+    help: 'Help',
+    emergencyEventLogged: 'Emergency Event Logged'
   }
 }
 
@@ -1049,6 +1111,9 @@ const currentTranslations = computed(() => translations[currentLanguage.value])
 const setLanguage = (language) => {
   currentLanguage.value = language
   localStorage.setItem('language', language)
+  
+  // 触发自定义事件，通知其他组件语言已切换
+  window.dispatchEvent(new CustomEvent('language-changed', { detail: { language } }))
 }
 
 const toggleLanguage = () => {

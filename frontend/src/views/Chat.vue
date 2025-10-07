@@ -55,7 +55,7 @@
             
             <!-- 紧急求助按钮 -->
             <button
-              @click="showEmergencyModal = true"
+              @click="handleEmergencyClick"
               class="w-6 h-6 bg-red-500 text-white rounded-full shadow-md hover:bg-red-600 transition-all duration-200 flex items-center justify-center flex-shrink-0"
               :class="{ 'w-8 h-8': userStore.isElderMode }"
               :aria-label="t('emergency')"
@@ -620,13 +620,30 @@
                 </div>
 
                 <!-- 系统消息 -->
-                <div v-else-if="message.type === 'system'" class="flex justify-center">
-                  <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 max-w-md text-center">
-                    <ExclamationTriangleIcon class="h-6 w-6 text-yellow-600 mx-auto mb-2" />
-                    <p class="text-sm text-yellow-800"
-                       :class="{ 'text-elder-base': userStore.isElderMode }">
-                      {{ message.content }}
-                    </p>
+                <div v-else-if="message.type === 'system'" class="flex justify-start">
+                  <div 
+                    :class="[
+                      'rounded-lg p-4 max-w-3xl text-left',
+                      message.content.includes('🚨') 
+                        ? 'bg-red-50 border-2 border-red-300' 
+                        : 'bg-yellow-50 border border-yellow-200'
+                    ]"
+                  >
+                    <div class="flex items-start space-x-3">
+                      <ExclamationTriangleIcon 
+                        class="h-6 w-6 flex-shrink-0 mt-0.5" 
+                        :class="message.content.includes('🚨') ? 'text-red-600' : 'text-yellow-600'" 
+                      />
+                      <p 
+                        class="text-sm flex-1 whitespace-pre-line"
+                        :class="[
+                          message.content.includes('🚨') ? 'text-red-800 font-medium' : 'text-yellow-800',
+                          { 'text-elder-base': userStore.isElderMode }
+                        ]"
+                      >
+                        {{ message.content }}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -951,10 +968,7 @@
 
 
 
-    <!-- 紧急求助弹窗 -->
-    <Teleport to="body">
-      <EmergencyModal v-if="showEmergencyModal" @close="showEmergencyModal = false" />
-    </Teleport>
+    <!-- 紧急求助弹窗已移至 App.vue 作为全局组件 -->
 
     <!-- 正反馈模态框 -->
     <PositiveFeedbackModal 
@@ -999,7 +1013,6 @@ import {
   PlusIcon,
   Bars3Icon
 } from '@heroicons/vue/24/outline'
-import EmergencyModal from '@/components/EmergencyModal.vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 import PositiveFeedbackModal from '@/components/PositiveFeedbackModal.vue'
 import NegativeFeedbackModal from '@/components/NegativeFeedbackModal.vue'
@@ -1013,7 +1026,6 @@ const speechStore = useSpeechStore()
 
 // 响应式状态
 const inputMessage = ref('')
-const showEmergencyModal = ref(false)
 const messagesContainer = ref(null)
 const textInput = ref(null)
 const isMobile = ref(window.innerWidth < 768)
@@ -1910,6 +1922,13 @@ const handleResize = () => {
   // 用户需要手动点击按钮来展开侧边栏
 }
 
+// 紧急求助按钮点击处理（触发全局事件，由 App.vue 统一管理弹窗）
+const handleEmergencyClick = () => {
+  window.dispatchEvent(new CustomEvent('crisis-detected', { 
+    detail: { manual: true } // 标记为手动触发
+  }))
+}
+
 // 生命周期
 onMounted(async () => {
   try {
@@ -1940,6 +1959,12 @@ onMounted(async () => {
     if (!e.target.closest('.relative')) {
       showModelDropdown.value = false
     }
+  })
+  
+  // 监听语言切换事件，更新危机消息翻译
+  window.addEventListener('language-changed', () => {
+    console.log('🌍 语言切换事件触发，更新危机消息翻译')
+    chatStore.updateCrisisMessagesTranslation()
   })
   
   // 滚动到底部

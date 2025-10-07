@@ -16,4 +16,6 @@ urlpatterns = [
     path('feedback/', views.ChatFeedbackView.as_view(), name='chat-feedback'),
     # 清空聊天记录
     path('clear/', views.clear_chat_history, name='clear-chat-history'),
+    # 危机报告
+    path('crisis-report/', views.report_crisis, name='crisis-report'),
 ]

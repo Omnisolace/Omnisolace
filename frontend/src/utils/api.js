@@ -179,7 +179,10 @@ export const chatApi = {
   }),
 
   // 发送反馈
-  sendFeedback: (feedbackData) => api.post('/v1/chat/feedback/', feedbackData)
+  sendFeedback: (feedbackData) => api.post('/v1/chat/feedback/', feedbackData),
+  
+  // 报告危机事件
+  reportCrisis: (crisisData) => api.post('/v1/chat/crisis-report/', crisisData)
 }
 
 // 情绪分析相关 API
