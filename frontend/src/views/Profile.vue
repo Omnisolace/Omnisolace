@@ -183,7 +183,7 @@
           class="w-full btn-primary"
           :class="{ 'py-3 text-elder-base': userStore.isElderMode }"
         >
-          {{ t('generatePsychReport') }}
+          {{ t('generateReport') }}
         </button>
       </div>
 
