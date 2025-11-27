@@ -87,20 +87,37 @@ WSGI_APPLICATION = 'omnisolace.wsgi.application'
 ASGI_APPLICATION = 'omnisolace.asgi.application'
 
 # Database configuration
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME', 'omnisolace'),
-        'USER': os.getenv('DB_USER', 'root'),
-        'PASSWORD': os.getenv('DB_PASSWORD', ''),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '3306'),
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
+# Support both Railway (MYSQL*) and custom (DB_*) environment variables
+if os.getenv('MYSQLDATABASE'):  # Railway provides MYSQL* variables
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.getenv('MYSQLDATABASE'),
+            'USER': os.getenv('MYSQLUSER'),
+            'PASSWORD': os.getenv('MYSQLPASSWORD'),
+            'HOST': os.getenv('MYSQLHOST'),
+            'PORT': os.getenv('MYSQLPORT', '3306'),
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            },
+        }
     }
-}
+else:  # Fallback to custom DB_* variables
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.getenv('DB_NAME', 'omnisolace'),
+            'USER': os.getenv('DB_USER', 'root'),
+            'PASSWORD': os.getenv('DB_PASSWORD', ''),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', '3306'),
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            },
+        }
+    }
 
 # Redis configuration for channels and cache
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
@@ -207,6 +224,15 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5174",
     "http://10.253.51.30:5174",  # 添加您的IP地址
 ]
+
+# 从环境变量读取生产环境的 CORS 允许来源
+CORS_ALLOWED_ORIGINS_ENV = os.getenv('CORS_ALLOWED_ORIGINS', '')
+if CORS_ALLOWED_ORIGINS_ENV:
+    # 支持多个域名，用逗号分隔
+    CORS_ALLOWED_ORIGINS.extend([
+        origin.strip() for origin in CORS_ALLOWED_ORIGINS_ENV.split(',')
+        if origin.strip()
+    ])
 
 CORS_ALLOW_CREDENTIALS = True
 

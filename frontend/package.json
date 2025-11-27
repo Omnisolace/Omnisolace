@@ -8,13 +8,15 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "serve": "vite preview --port 4173"
+    "serve": "vite preview --port 4173",
+    "start": "serve dist -s -l ${PORT:-3000}"
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.16",
     "@heroicons/vue": "^2.0.18",
     "axios": "^1.6.0",
     "pinia": "^2.1.7",
+    "serve": "^14.2.1",
     "vue": "^3.4.0",
     "vue-router": "^4.2.5"
   },

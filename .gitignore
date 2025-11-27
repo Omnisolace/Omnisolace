@@ -1,0 +1,65 @@
+# 依赖
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# 环境变量
+.env
+.env.local
+.env.production
+.env.development
+*.log
+
+# 构建文件
+dist/
+build/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 数据库
+*.db
+*.sqlite3
+
+# 日志
+logs/
+*.log
+
+# 缓存
+.cache/
+.pytest_cache/
+
+# 媒体文件（如果很大，可以考虑排除）
+# media/
+# staticfiles/
+
+# 临时文件
+tmp/
+temp/
+*.tmp
+
+# Python 虚拟环境
+venv/
+env/
+ENV/
+.venv/
+
+# 前端构建产物
+frontend/dist/
+frontend/.vite/
+
+# 后端静态文件
+backend/staticfiles/
+backend/media/
+
