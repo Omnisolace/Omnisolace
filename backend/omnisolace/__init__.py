@@ -1,1 +1,2 @@
-# This makes Python treat the directory as a package
+import pymysql
+pymysql.install_as_MySQLdb()
