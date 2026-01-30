@@ -787,6 +787,21 @@
                     <span class="hidden sm:inline">联网搜索</span>
                     <span class="sm:hidden">搜索</span>
                   </button>
+
+                  <!-- 🎤 语音播报开关按钮 -->
+                  <button
+                    v-if="speechStore.isSupported"
+                    @click="toggleAutoSpeak"
+                    class="flex items-center space-x-1 px-2 sm:px-3 py-1.5 rounded-full transition-colors duration-200 text-xs sm:text-sm font-medium"
+                    :class="isAutoSpeak 
+                      ? 'bg-purple-100 text-purple-700' 
+                      : 'bg-gray-50 text-gray-700 hover:bg-gray-100'"
+                    :title="isAutoSpeak ? '关闭语音播报' : '开启语音播报'"
+                  >
+                    <SpeakerWaveIcon v-if="isAutoSpeak" class="h-3 w-3" />
+                    <SpeakerXMarkIcon v-else class="h-3 w-3" />
+                    <span class="hidden sm:inline">{{ isAutoSpeak ? '播报' : '静音' }}</span>
+                  </button>
                 </div>
 
                 <!-- 右侧操作按钮组 -->
@@ -1011,7 +1026,9 @@ import {
   GlobeAltIcon,
   MagnifyingGlassIcon,
   PlusIcon,
-  Bars3Icon
+  Bars3Icon,
+  SpeakerWaveIcon,
+  SpeakerXMarkIcon
 } from '@heroicons/vue/24/outline'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 import PositiveFeedbackModal from '@/components/PositiveFeedbackModal.vue'
@@ -1036,6 +1053,8 @@ const selectedModel = ref('DeepSeek')
 const isDeepThinking = ref(false)
 const isWebSearch = ref(false)
 const showModelDropdown = ref(false)
+// 🎤 语音播报开关状态
+const isAutoSpeak = ref(localStorage.getItem('autoSpeak') === 'true' || userStore.isElderMode)
 
 // 侧边栏状态
 const isSidebarCollapsed = ref(true) // 默认收起（移动端和桌面端都收起）
@@ -1232,6 +1251,23 @@ const toggleVoiceInput = async () => {
 const sendQuickTopic = (topic) => {
   inputMessage.value = topic
   sendMessage()
+}
+
+// 🎤 切换语音播报
+const toggleAutoSpeak = () => {
+  isAutoSpeak.value = !isAutoSpeak.value
+  localStorage.setItem('autoSpeak', isAutoSpeak.value)
+  
+  if (!isAutoSpeak.value) {
+    // 关闭时停止当前播放
+    speechStore.stopSpeaking()
+  }
+  
+  // 显示提示
+  const message = isAutoSpeak.value ? '已开启语音播报' : '已关闭语音播报'
+  if (window.$notification) {
+    window.$notification.success(message)
+  }
 }
 
 // 停止流式响应
@@ -1903,6 +1939,48 @@ watch(() => speechStore.transcript, (newTranscript) => {
     // 语音识别完成，将结果填入输入框
     inputMessage.value = newTranscript
     speechStore.reset()
+  }
+})
+
+// 🎤 新增：AI回复语音播报功能
+const speakAIResponse = (text) => {
+  // 老年模式或主动开启时播报
+  if (userStore.isElderMode || isAutoSpeak.value) {
+    // 清理markdown语法，只保留纯文本
+    const cleanText = text
+      .replace(/```[\s\S]*?```/g, '') // 移除代码块
+      .replace(/`[^`]+`/g, '') // 移除行内代码
+      .replace(/\*\*([^*]+)\*\*/g, '$1') // 移除粗体
+      .replace(/\*([^*]+)\*/g, '$1') // 移除斜体
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // 移除链接
+      .replace(/#+\s/g, '') // 移除标题符号
+      .replace(/---+/g, '') // 移除分隔线
+      .replace(/\|\|\|[\s\S]*$/g, '') // 移除情绪分析JSON
+      .trim()
+    
+    // 限制长度，避免播报过长
+    const shortText = cleanText.substring(0, 300)
+    
+    if (shortText && speechStore.isSupported) {
+      speechStore.speak(shortText, {
+        rate: userStore.isElderMode ? 0.8 : 0.9, // 老年模式更慢
+        volume: 1
+      })
+    }
+  }
+}
+
+// 🎤 新增：监听AI回复完成，触发语音播报
+watch(() => chatStore.isLoading, (isLoading, wasLoading) => {
+  // 从加载中变为非加载中，说明AI回复完成
+  if (wasLoading && !isLoading) {
+    const lastMsg = chatStore.messages[chatStore.messages.length - 1]
+    if (lastMsg && lastMsg.type === 'ai' && lastMsg.content) {
+      // 延迟200ms后播报，确保内容已完全渲染
+      setTimeout(() => {
+        speakAIResponse(lastMsg.content)
+      }, 200)
+    }
   }
 })
 
