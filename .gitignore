@@ -63,3 +63,5 @@ frontend/.vite/
 backend/staticfiles/
 backend/media/
 
+# 项目特定文档目录（不推送到远程）
+Omnisolace文档/
